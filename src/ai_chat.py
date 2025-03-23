@@ -1,10 +1,16 @@
 import ollama
 
+PROMPT = """
+"""
+
 def generate_ai_response_stream(user_prompt: str):
     try:
         response = ollama.chat(
             model='gemma3:4b',
-            messages=[{'role': 'user', 'content': user_prompt}],
+            messages=[
+                {'role': 'system', 'content': PROMPT},
+                {'role': 'user', 'content': user_prompt}
+            ],
             stream=True
         )
 

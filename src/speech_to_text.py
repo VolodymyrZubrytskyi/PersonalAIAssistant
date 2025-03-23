@@ -6,11 +6,11 @@ import json
 from collections import deque
 
 # Configuration
-DEVICE_INDEX = 2  # Check your device index
-RATE = 16000
+DEVICE_INDEX = 1 # Check your device index
+RATE = 48000 
 CHUNK = 512  # smaller chunk for faster response
 FORMAT = pyaudio.paInt16
-THRESHOLD = 75  # Lower to capture fast speech
+THRESHOLD = 150  # Lower to capture fast speech
 SILENCE_TIMEOUT = 1.0  # Slightly increased for accuracy
 MODEL_PATH = "models/vosk-model-uk-v3"
 
@@ -26,7 +26,7 @@ def listen_and_recognize():
     audio = pyaudio.PyAudio()
 
     stream = audio.open(format=FORMAT, channels=1, rate=RATE,
-                        input=True, input_device_index=DEVICE_INDEX,
+                        input=True, input_device_index=DEVICE_INDEX, 
                         frames_per_buffer=CHUNK)
 
     BUFFER_SECONDS = 1.5
