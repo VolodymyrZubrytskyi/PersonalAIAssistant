@@ -1,56 +1,20 @@
-import subprocess
-import os
-import queue
-import threading
+import numpy as np
+from piper import PiperVoice
+import sounddevice as sd
 
 SPEAKER = 2
 VOICE_MODEL_PATH = "voices/uk_UA-ukrainian_tts-medium.onnx"
-PIPER_PATH = os.path.join(os.path.dirname(__file__), "piper/piper")
+VOICE_CONFIG_PATH = "voices/uk_UA-ukrainian_tts-medium.onnx.json"
 
-speech_queue = queue.Queue()
-speaking = threading.Event()
-
-def speak_worker():
-    while True:
-        text = speech_queue.get()
-        if text is None:
-            break
-        speak_text(text)
-        speaking.clear()
-        speech_queue.task_done()
-
-def start_speaking():
-    threading.Thread(target=speak_worker, daemon=True).start()
-
-def enqueue_speech(text: str):
-    speaking.set()
-    speech_queue.put(text)
+voice = PiperVoice.load(VOICE_MODEL_PATH, config_path = VOICE_CONFIG_PATH)
 
 def speak_text(text: str):
-    if not text.strip():
-        print("Warning: Empty text received, skipping TTS.")
-        return
+    stream = sd.OutputStream(samplerate=22050, channels=1, dtype='int16')
+    stream.start()
 
-    try:
-        piper_process = subprocess.Popen(
-            [PIPER_PATH, "--model", VOICE_MODEL_PATH, "--speaker", str(SPEAKER), "--output_file", "-"],
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-        )
-        aplay_process = subprocess.Popen(["aplay"], stdin=piper_process.stdout, stderr=subprocess.PIPE)
+    for audio_bytes in voice.synthesize_stream_raw(text):
+        int_data = np.frombuffer(audio_bytes, dtype=np.int16)
+        stream.write(int_data)
 
-        piper_process.stdin.write(text.encode('utf-8'))
-        piper_process.stdin.close()
-
-        piper_process.wait()
-        aplay_process.wait()
-
-        if piper_process.returncode != 0:
-            stderr = piper_process.stderr.read().decode()
-            raise Exception(f"Piper error: {stderr}")
-
-        if aplay_process.returncode != 0:
-            stderr = aplay_process.stderr.read().decode()
-            raise Exception(f"aplay error: {stderr}")
-
-    except Exception as e:
-        print(f"Error while speaking text: {str(e)}")
+    stream.stop()
+    stream.close()
