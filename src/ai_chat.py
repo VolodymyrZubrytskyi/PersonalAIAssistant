@@ -1,40 +1,25 @@
-import subprocess
+import ollama
 
-def generate_ai_response_stream(prompt: str):
+def generate_ai_response_stream(user_prompt: str):
     try:
-        # Start the AI process
-        process = subprocess.Popen(
-            ["ollama", "run", "gemma3:4b"],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            bufsize=1,
-            universal_newlines=True
+        response = ollama.chat(
+            model='gemma3:4b',
+            messages=[{'role': 'user', 'content': user_prompt}],
+            stream=True
         )
 
-        # Send the prompt to the AI model
-        process.stdin.write(prompt + "\n")
-        process.stdin.close()
+        sentence = ""
+        for chunk in response:
+            text = chunk['message']['content']
+            sentence += text
 
-        buffer = ""
-        while True:
-            # Read one character at a time for real-time streaming
-            chunk = process.stdout.read(1)
-            if not chunk:
-                break
-            buffer += chunk
+            # Accumulate complete sentences or larger chunks
+            if len(sentence) >= 150 or any(punct in sentence for punct in [".", "!", "?"]):
+                yield sentence.strip()
+                sentence = ""
 
-            # Yield full sentences or large chunks to reduce interruptions
-            if "." in buffer or "\n" in buffer:
-                sentence = buffer.strip()
-                buffer = ""
-                yield sentence
-
-        # Check for errors in the AI process
-        stderr = process.stderr.read()
-        if process.wait() != 0:
-            raise Exception(f"AI generation failed: {stderr.strip()}")
+        if sentence:
+            yield sentence.strip()
 
     except Exception as e:
         print(f"Error during AI generation: {str(e)}")
