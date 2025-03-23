@@ -1,7 +1,7 @@
 # AI Voice Assistant
 
-This project is a real-time AI-powered voice assistant that listens to user input, generates responses using an AI model, and speaks the responses back to the user. It leverages speech recognition, AI response generation, and text-to-speech synthesis to create a seamless interactive experience.
 ![code-diagram](img/diagram.png)
+This project is a real-time AI-powered voice assistant that listens to user input, generates responses using an AI model, and speaks the responses back to the user. It leverages speech recognition, AI response generation, and text-to-speech synthesis to create a seamless interactive experience.
 
 ---
 
