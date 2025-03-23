@@ -6,7 +6,7 @@ import json
 from collections import deque
 
 # Configuration
-DEVICE_INDEX = 1  # Check your device index
+DEVICE_INDEX = 2  # Check your device index
 RATE = 16000
 CHUNK = 512  # smaller chunk for faster response
 FORMAT = pyaudio.paInt16
@@ -17,25 +17,22 @@ MODEL_PATH = "models/vosk-model-uk-v3"
 # Initialize Vosk Model
 model = Model(MODEL_PATH)
 
-# PyAudio initialization
-audio = pyaudio.PyAudio()
-
-stream = audio.open(format=FORMAT, channels=1, rate=RATE,
-                    input=True, input_device_index=DEVICE_INDEX,
-                    frames_per_buffer=CHUNK)
-
-print("Listening continuously. Press Ctrl+C to stop.")
-
 def detect_voice(audio_chunk):
     audio_data = np.frombuffer(audio_chunk, dtype=np.int16)
     volume = np.abs(audio_data).max()
     return volume > THRESHOLD
 
-BUFFER_SECONDS = 1.5
-pre_audio_buffer = deque(maxlen=int(BUFFER_SECONDS * RATE / CHUNK))
+def listen_and_recognize():
+    audio = pyaudio.PyAudio()
 
-try:
-    while True:
+    stream = audio.open(format=FORMAT, channels=1, rate=RATE,
+                        input=True, input_device_index=DEVICE_INDEX,
+                        frames_per_buffer=CHUNK)
+
+    BUFFER_SECONDS = 1.5
+    pre_audio_buffer = deque(maxlen=int(BUFFER_SECONDS * RATE / CHUNK))
+
+    try:
         frames = []
         silent_chunks = 0
         speaking = False
@@ -70,12 +67,13 @@ try:
         text = result.get('text', '').strip()
         if text:
             print(f"✅ Recognized: {text}")
+            return text
         else:
             print("⚠️ Could not recognize speech clearly.")
 
-except KeyboardInterrupt:
-    print("\n🛑 Stopped by user.")
-finally:
-    stream.stop_stream()
-    stream.close()
-    audio.terminate()
+    except KeyboardInterrupt:
+        print("\n🛑 Stopped by user.")
+    finally:
+        stream.stop_stream()
+        stream.close()
+        audio.terminate()
